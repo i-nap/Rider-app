@@ -1,7 +1,4 @@
 Hello
 Inap Sir Teaching github
-<<<<<<< HEAD
 Hello1
-=======
 mula k ho yo 
->>>>>>> de59abf (good job)
