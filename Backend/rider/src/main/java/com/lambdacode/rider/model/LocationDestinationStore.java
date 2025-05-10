@@ -23,7 +23,6 @@ public class LocationDestinationStore {
 
     private Long timeInitiated;
 
-    @OneToOne
-    @JoinColumn(name = "groupId")
+    @OneToOne(mappedBy = "locationDestination")
     private RideGroup rideGroup;
 }
