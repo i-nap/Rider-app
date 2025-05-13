@@ -1,19 +1,23 @@
 package com.lambdacode.rider.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Entity
+import java.time.LocalDateTime;
+
+@Document
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class LocationDestinationStore {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private long locationId;
+    private ObjectId locationId;
 
     private double startLongitude;
     private double startLatitude;
@@ -21,8 +25,12 @@ public class LocationDestinationStore {
     private double endingLongitude;
     private double endingLatitude;
 
-    private Long timeInitiated;
+    private LocalDateTime timeInitiated;
 
-    @OneToOne(mappedBy = "locationDestination")
+//    @OneToOne(mappedBy = "locationDestination")
+//    private RideGroup rideGroup;
+
+    @DBRef
     private RideGroup rideGroup;
+
 }
