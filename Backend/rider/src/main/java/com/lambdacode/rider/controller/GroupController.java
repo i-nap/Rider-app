@@ -15,10 +15,10 @@ public class GroupController {
     @Autowired
     private GroupServices groupServices;
 
-    @PostMapping("/create_group/{username}")
-    public ResponseEntity<?> createGroup(@RequestBody CreateGroupRequestDto request, @PathVariable String username){
+    @PostMapping("/create_group")
+    public ResponseEntity<?> createGroup(@RequestBody CreateGroupRequestDto request){
 
-        Boolean createdGroup = groupServices.createGroup(request, username);
+        Boolean createdGroup = groupServices.createGroup(request);
         if(createdGroup){
             return ResponseEntity.ok("Group Created");
         }else{

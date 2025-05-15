@@ -9,6 +9,8 @@ import com.lambdacode.rider.repository.RideGroupRepo;
 import com.lambdacode.rider.repository.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.query.Collation;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -28,7 +30,14 @@ public class GroupServices {
     @Autowired
     private UserRepo userRepo;
 
-    public Boolean createGroup(CreateGroupRequestDto request, String username) {
+
+
+    public Boolean createGroup(CreateGroupRequestDto request) {
+
+        //get username of active user
+        Authentication authentication  = SecurityContextHolder.getContext().getAuthentication();
+        String username  = authentication.getName();
+
         RideGroup createGroup = new RideGroup();
 
         //creates group with name and admin

@@ -10,9 +10,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.ArrayList;
 import java.util.List;
-//abcx
+
 @Document(collection = "users")
 @Data
 @AllArgsConstructor
@@ -23,16 +22,13 @@ public class User {
     private ObjectId userId;
 
     @NonNull
+    @Indexed(unique = true)
     private String username;
     @NonNull
     @Indexed(unique = true)
     private String email;
     @NonNull
     private String password;
-
-//    @ManyToMany
-//    @JoinTable(name = "joinedGroup", joinColumns = @JoinColumn(name = "userId"),inverseJoinColumns = @JoinColumn(name = "groupId"))
-//    private List<RideGroup> rideGroups;
 
     @DBRef
     private List<RideGroup> rideGroups;
