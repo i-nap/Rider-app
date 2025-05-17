@@ -1,4 +1,5 @@
 import { Stack, Link } from 'expo-router';
+import UserAccountPage from '~/app/screens/UserAccountPage';
 
 import { Button } from '~/components/Button';
 import { Container } from '~/components/Container';
@@ -9,9 +10,9 @@ export default function Home() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <Container>
-        <ScreenContent path="app/index.tsx" title="Home"></ScreenContent>
+        <UserAccountPage />
         <Link href={{ pathname: '/details', params: { name: 'Dan' } }} asChild>
-          <Button title="Show Details" />
+          <Button title="Hello World" />
         </Link>
       </Container>
     </>
