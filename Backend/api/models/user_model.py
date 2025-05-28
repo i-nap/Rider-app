@@ -11,7 +11,7 @@ class User(models.Model):
     phone_number = models.CharField(max_length=20, unique=True)
     password_hash = models.CharField(max_length=255)
     profile_photo_url = models.URLField(max_length=500, null=True, blank=True)
-    
+    email_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     

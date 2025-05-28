@@ -1,16 +1,15 @@
 import jwt
 from cryptography.fernet import Fernet
 import json
-
-# === Keys used ===
-JWT_SECRET = '0123456789abcdef0123456789abcdef'  # Same as in Django middleware
-FERNET_KEY = b'bxZ7E9QAm4GbKvJDD1yMX8rhZCT0uRBAqff_U7jKb1I='  # Same base64 key used in Django
+# Keys (MUST match your middleware)
+JWT_SECRET = "7c345a2c7f9e8a24442d83090e7d327e670c86da3d21c5b16dbf53bd53716fa7"  # Same as in Django
+FERNET_KEY = b"N8gyllOd3SlW5pk0AgJ7nE4XYQDC5lniL5G4sfcsyZM=" # 32-byte base64 key
 
 fernet = Fernet(FERNET_KEY)
 
 # === Simulated response token from Django ===
 response = {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZWN1cmVfZGF0YSI6ImdBQUFBQUJvTHBmaWd5SUlOaFJUc04tWjJfdjZmWGtTVjNHaTVRU1l1SDdYWTM1aGQ5dC1pMVRKT2dmRE1BSVNOaktHM2UwWlJ4WjJyNVVhc19kZkUwbXlxQ0tGaXBPNHdVN0pJTDVIUHp1VkZLQjBzS1RTRmVKd1lLeE9yZ1NENDZUV0VMaklCY0dxIn0.3AFggT1uEzPeVehD74G7gkSOKYgNWHnCgIJ0XcNQTAo"
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZWN1cmVfZGF0YSI6ImdBQUFBQUJvTm1fU1lySVJDMmNERW1Qd1N0WmZ6TEZ5Mk1DRThBVjRzMTI0LWh5ZVBjeUVERlZ1VUZFeXdJLS1NemZ5cno5eEhsYjBycFVEcWVzTmVkdG1CM2tyVkJjc29ocXBYUDJZTlk3ZVQyenRaN0cxQ3FaNjh2b0VIR2lDTVp5dkd0OVhiUHBjIn0.k300Ne3TDeUsUj6L_az0VeXSarHS4d9A8ZX96X6eJGg"
 }
 
 # === Step 1: Decode JWT and extract encrypted payload ===
