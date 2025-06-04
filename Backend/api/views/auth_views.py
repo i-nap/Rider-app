@@ -10,6 +10,14 @@ from django.contrib.auth import authenticate
 from django.db import transaction
 from django.conf import settings
 import json
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+import socket
+import smtplib
+import dns.resolver
 import logging
 from datetime import timedelta
 
@@ -41,7 +49,7 @@ def signup(request):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         email = serializer.validated_data['email'].lower()
-        password = serializer.validated_data['password_hash']
+        password = serializer.validated_data['password']
         
         # Check if user already exists
         if User.objects.filter(email=email).exists():
@@ -193,66 +201,37 @@ def verify_email(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
-    """
-    User login endpoint with enhanced security
-    """
     try:
-        # Rate limiting
         client_ip = auth_service.get_client_ip(request)
         email = request.data.get('email', '').lower().strip()
         rate_limit_key = f'login_{email}_{client_ip}'
-        
+
         if not check_rate_limit(rate_limit_key, max_attempts=5, window_minutes=15):
-            return Response(
-                {'error': 'Too many login attempts. Please try again later.'}, 
-                status=status.HTTP_429_TOO_MANY_REQUESTS
-            )
-        
+            return Response({'error': 'Too many login attempts. Please try again later.'},
+                            status=status.HTTP_429_TOO_MANY_REQUESTS)
+
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        email = serializer.validated_data['email'].lower()
-        password = serializer.validated_data['password_hash']
-        
-        # Authenticate user
-        user = authenticate(request, username=email, password=password)
-        if not user:
-            # Check if user exists to provide specific error
-            if User.objects.filter(email=email).exists():
-                return Response(
-                    {'error': 'Invalid password.'}, 
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-            else:
-                return Response(
-                    {'error': 'No account found with this email.'}, 
-                    status=status.HTTP_404_NOT_FOUND
-                )
-        
-        # Check if email is verified
+
+        email = serializer.validated_data['email']
+        user = User.objects.get(email=email)
+
         if not user.email_verified:
-            return Response(
-                {'error': 'Please verify your email before logging in.'}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Check if account is active
+            return Response({'error': 'Please verify your email before logging in.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
         if not user.is_active:
-            return Response(
-                {'error': 'Your account has been deactivated. Please contact support.'}, 
-                status=status.HTTP_403_FORBIDDEN
-            )
-        
-        # Generate tokens
+            return Response({'error': 'Your account has been deactivated. Please contact support.'},
+                            status=status.HTTP_403_FORBIDDEN)
+
         refresh = RefreshToken.for_user(user)
         access_token = refresh.access_token
-        
+
         # Update last login
         user.last_login = timezone.now()
         user.save(update_fields=['last_login'])
-        
-        logger.info(f"User logged in successfully: {email}")
-        
+
         return Response({
             'message': 'Login successful',
             'user': {
@@ -260,21 +239,21 @@ def login(request):
                 'full_name': user.full_name,
                 'email': user.email,
                 'phone_number': user.phone_number,
-                'last_login': user.last_login
+                'last_login': user.last_login.isoformat() if user.last_login else None
             },
             'tokens': {
                 'access': str(access_token),
                 'refresh': str(refresh)
             }
         }, status=status.HTTP_200_OK)
-        
+
+    except User.DoesNotExist:
+        return Response({'error': 'Invalid email or password.'},
+                        status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
-        return Response(
-            {'error': 'An unexpected error occurred. Please try again.'}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
+        return Response({'error': 'An unexpected error occurred. Please try again.'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 @api_view(['POST'])
 def logout(request):
     """
@@ -349,3 +328,91 @@ def resend_verification(request):
             {'error': 'An unexpected error occurred. Please try again.'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+    
+'''
+This part of the code verifies the existence of an email address by checking its format, domain, and SMTP server.
+'''
+@api_view(['POST'])
+def verify_email_api(request):
+
+    email = request.data.get('email')
+    
+    if not email:
+        return Response(
+            {'error': 'Email is required'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # Step 1: Format validation
+        validate_email(email)
+        
+        # Step 2: Domain and MX check
+        domain = email.split('@')[1]
+        mx_exists = check_mx_record(domain)
+        
+        # Check if it exists in database 
+        User.objects.filter(email=email).exists()
+        if User.objects.filter(email=email).exists():
+            return Response({
+                'email': email,
+                'valid': False,
+                'reason': 'Email exists in database'
+            })
+        if not mx_exists:
+            return Response({
+                'email': email,
+                'valid': False,
+                'reason': 'Domain has no MX record'
+            })
+        
+        # Step 3: SMTP verification
+        smtp_valid = verify_smtp(email, domain)
+        
+        return Response({
+            'email': email,
+            'valid': smtp_valid,
+            'reason': 'Email exists' if smtp_valid else 'Email does not exist'
+        })
+        
+    except ValidationError:
+        return Response({
+            'email': email,
+            'valid': False,
+            'reason': 'Invalid email format'
+        })
+    except Exception as e:
+        logger.error(f"Email verification error: {str(e)}")
+        return Response(
+            {'error': 'Verification failed', 'details': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+def check_mx_record(domain):
+    """Check if domain has MX record"""
+    try:
+        dns.resolver.resolve(domain, 'MX')
+        return True
+    except:
+        return False
+
+def verify_smtp(email, domain):
+    """Verify email via SMTP"""
+    try:
+        # Get MX record
+        mx_records = dns.resolver.resolve(domain, 'MX')
+        mx_record = str(mx_records[0]).split(' ')[1].rstrip('.')
+        
+        # Connect and verify
+        with smtplib.SMTP(mx_record, timeout=10) as server:
+            server.helo('example.com')
+            server.mail('test@example.com')
+            code, message = server.rcpt(email)
+            return code == 250
+            
+    except Exception as e:
+        logger.warning(f"SMTP check failed for {email}: {str(e)}")
+        return False
+
+
+

@@ -40,7 +40,7 @@ def initiate_signup(user_data: Dict[str, Any], request) -> Dict[str, Any]:
             'full_name': full_name,
             'email': email,
             'phone_number': user_data.get('phone_number', ''),
-            'password': user_data['password_hash'] , # ✅ Plain text; will be hashed properly in .set_password()
+            'password':  user_data['password'], # ✅ Plain text; will be hashed properly in .set_password()
             'code': code,
             'timestamp': timezone.now().timestamp(),
             'attempts': 0
@@ -269,3 +269,5 @@ Need help? Contact us at {settings.DEFAULT_FROM_EMAIL}
     except Exception as e:
         logger.error(f"Error sending welcome email to {email}: {str(e)}")
         return False
+    
+
