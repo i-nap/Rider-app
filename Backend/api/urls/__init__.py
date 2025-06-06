@@ -2,6 +2,7 @@ from django.urls import path
 from ..views.group_views import get_group_list, get_my_group_list , get_my_active_group_list, join_group,create_group, leave_group,join_group_with_code
 from django.http import JsonResponse
 from ..views.auth_views import signup, verify_email,login,verify_email_api
+from ..views.warning_trigger import warning_trigger
 
 urlpatterns = [
     path('getGroupList/', get_group_list, name='get-group-list'),
@@ -14,6 +15,7 @@ urlpatterns = [
     path('signup/', signup, name='signup'),
     path('signup/verify/', verify_email, name='verify-email'),
     path('login/',login, name='login'),
-    path('verify_email/', verify_email_api, name='verify-email-api')
+    path('verify_email/', verify_email_api, name='verify-email-api'),
+    path('warning_trigger/', warning_trigger, name='warning-trigger'),
 
 ]
